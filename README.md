@@ -7,3 +7,6 @@ I couldn't find a good and simple plugin to do it, which is odd, but everything 
 Needed this for a client site. Needed to be simple and fast. It's literally WP's widget, with category added. Simple.
 
 Should it be a plugin and in the repo? you tell me. `¯\_(ツ)_/¯`
+
+## Screenshot
+![widget screenshot](/assets/screenshot-1.png?raw=true "Widget Screenshot")
