@@ -1,11 +1,16 @@
 <?php
 /**
- * Widget API: WP_Widget_Recent_Posts class
+ * Widget API: WP_Widget_Recent_Posts_In_Category
  *
  * @package WordPress
  * @subpackage Widgets
  * @since 4.4.0
  */
+
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
 
 /**
  * Core class used to implement a Recent Posts widget.
@@ -14,7 +19,7 @@
  *
  * @see WP_Widget
  */
-class WP_Widget_Recent_Posts extends WP_Widget {
+class WP_Widget_Recent_Posts_In_Category extends WP_Widget {
 
 	/**
 	 * Sets up a new Recent Posts widget instance.
@@ -24,12 +29,12 @@ class WP_Widget_Recent_Posts extends WP_Widget {
 	 */
 	public function __construct() {
 		$widget_ops = array(
-			'classname' => 'widget_recent_entries',
+			'classname' => 'widget_recent_entries_in_category',
 			'description' => __( 'Your site&#8217;s most recent Posts.' ),
 			'customize_selective_refresh' => true,
 		);
-		parent::__construct( 'recent-posts', __( 'Recent Posts' ), $widget_ops );
-		$this->alt_option_name = 'widget_recent_entries';
+		parent::__construct( 'recent-posts-in-category', __( 'Recent Posts in Category' ), $widget_ops );
+		$this->alt_option_name = 'widget_recent_entries_in_category';
 	}
 
 	/**
@@ -47,7 +52,10 @@ class WP_Widget_Recent_Posts extends WP_Widget {
 			$args['widget_id'] = $this->id;
 		}
 
-		$title = ( ! empty( $instance['title'] ) ) ? $instance['title'] : __( 'Recent Posts' );
+		$category = ( ! empty( $instance['category'] ) ) ? $instance['category'] : '';
+		$cat_name = get_cat_name( $instance['category'] );
+
+		$title = ( ! empty( $instance['title'] ) ) ? $instance['title'] : __( 'Recent ' . $cat_name . ' Posts' );
 
 		/** This filter is documented in wp-includes/widgets/class-wp-widget-pages.php */
 		$title = apply_filters( 'widget_title', $title, $instance, $this->id_base );
@@ -67,6 +75,7 @@ class WP_Widget_Recent_Posts extends WP_Widget {
 		 * @param array $args An array of arguments used to retrieve the recent posts.
 		 */
 		$r = new WP_Query( apply_filters( 'widget_posts_args', array(
+			'category__in'        => $category,
 			'posts_per_page'      => $number,
 			'no_found_rows'       => true,
 			'post_status'         => 'publish',
@@ -110,8 +119,9 @@ class WP_Widget_Recent_Posts extends WP_Widget {
 	 */
 	public function update( $new_instance, $old_instance ) {
 		$instance = $old_instance;
-		$instance['title'] = sanitize_text_field( $new_instance['title'] );
-		$instance['number'] = (int) $new_instance['number'];
+		$instance['title']     = sanitize_text_field( $new_instance['title'] );
+		$instance['category']  = sanitize_text_field( $new_instance['category'] );
+		$instance['number']    = (int) $new_instance['number'];
 		$instance['show_date'] = isset( $new_instance['show_date'] ) ? (bool) $new_instance['show_date'] : false;
 		return $instance;
 	}
@@ -126,11 +136,25 @@ class WP_Widget_Recent_Posts extends WP_Widget {
 	 */
 	public function form( $instance ) {
 		$title     = isset( $instance['title'] ) ? esc_attr( $instance['title'] ) : '';
+		$category  = isset( $instance['category'] ) ? esc_attr( $instance['category'] ) : '';
 		$number    = isset( $instance['number'] ) ? absint( $instance['number'] ) : 5;
 		$show_date = isset( $instance['show_date'] ) ? (bool) $instance['show_date'] : false;
 ?>
 		<p><label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e( 'Title:' ); ?></label>
-		<input class="widefat" id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" placeholder="<?php esc_attr_e( 'Recent Posts' ); ?>" type="text" value="<?php echo $title; ?>" /></p>
+		<input class="widefat" id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" type="text" value="<?php echo $title; ?>" /></p>
+
+		<p><label for="<?php echo $this->get_field_id( 'category' ); ?>"><?php _e( 'Category:' ); ?></label>
+			<?php
+			wp_dropdown_categories( array(
+				'orderby'    => 'title',
+				'hide_empty' => true,
+				'name'       => $this->get_field_name( 'category' ),
+				'id'         => $this->get_field_id( 'category' ),
+				'class'      => 'widefat',
+				'selected'   => $category
+			) );
+			?>
+		</p>
 
 		<p><label for="<?php echo $this->get_field_id( 'number' ); ?>"><?php _e( 'Number of posts to show:' ); ?></label>
 		<input class="tiny-text" id="<?php echo $this->get_field_id( 'number' ); ?>" name="<?php echo $this->get_field_name( 'number' ); ?>" type="number" step="1" min="1" value="<?php echo $number; ?>" size="3" /></p>
@@ -140,3 +164,13 @@ class WP_Widget_Recent_Posts extends WP_Widget {
 <?php
 	}
 }
+
+/**
+ * Register widget function
+ */
+function register_widget_recent_posts_in_category() {
+
+	register_widget( 'WP_Widget_Recent_Posts_In_Category' );
+
+}
+add_action( 'widgets_init', 'register_widget_recent_posts_in_category', 10 );
